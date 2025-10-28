@@ -1,0 +1,9 @@
+
+
+CK_isdaemon = 0
+CK_applock = 1
+
+CK_log = ../log/rtspserver
+
+
+MEDIA_FILE = ../conf/streams.json
