@@ -4,13 +4,13 @@
         {
             "name": "normal_h264",
             "type": "mp4",
-            "filename": "/home/joseph/us_datas/normal_h264.mp4",
+            "filename": "/home/joseph/data/normal_h264.mp4",
             "port": 7000
         },
         {
             "name": "n2",
             "type": "mp4",
-            "filename": "/home/joseph/us_datas/taiwan_computex_2024/n2.mp4",
+            "filename": "/home/joseph/data/taiwan_computex_2024/n2.mp4",
             "port": 8000
         }
     ]

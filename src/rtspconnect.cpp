@@ -125,6 +125,14 @@ void RtspConnect::handleRequest() {
     if (req == nullptr) {
         LOG_WARNING("not found request handler.");
 
+        if (m_session == nullptr) {
+            // the session was not created yet.
+            // or the RTSP communicate is not success yet.
+            // It easy to happen on telnet test.
+            m_bActive = false;
+            return ;
+        }
+
         // TODO:: close.....
         if (m_session->GetRtpRtcpHolder().GetTransportMode() == RtpTransportMode::RTP_TCP) {
             return;
