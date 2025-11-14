@@ -30,7 +30,12 @@ RtspSession::RtspSession(RtspConnect* connection)
 
 RtspSession::~RtspSession() {
 
-    //m_stream->RemoveOb(this);
+    if (m_bPlay) {
+        // if client handle request failed or request message is invalid as 
+        // the session is in transmission.
+        // we need to unbind this session with observers.
+        m_stream->RemoveOb(this);
+    }
 
 }
 

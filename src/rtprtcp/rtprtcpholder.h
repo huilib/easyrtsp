@@ -8,8 +8,6 @@
 #include "../mediasource/trackbase.h"
 #include "../mediasource/streambase.h"
 
-using rtp_class_t = mid_sink_base<tagRtp>;
-using rtcp_class_t = mid_sink_base<tagRtcp>;
 
 class TrackSink {    
 public:
@@ -25,15 +23,15 @@ public:
 
     const TrackBase* GetTrackInfo() const noexcept { return m_rtp_sink->GetTrack(); }
 
-    const rtp_class_t* GetRtpSink() const noexcept { return m_rtp_sink; }
+    const RtpBase* GetRtpSink() const noexcept { return m_rtp_sink; }
 
     void SendRtcpReport();
 
 private:
     RtpTransportMode m_rtp_mode;
     RtcpTransportMode m_rtcp_mode;
-    rtp_class_t* m_rtp_sink;
-    rtcp_class_t* m_rtcp_sink;
+    RtpBase* m_rtp_sink;
+    RtcpBase* m_rtcp_sink;
 };
 
 // 有可能是tcp-rtp复用, 有可能是rtp-rtcp复用.

@@ -10,12 +10,9 @@ extern "C" {
 #include <libavutil/time.h>
 }
 
-unsigned char RtpSink::START_KEY4[] = {0x00, 0x00, 0x0, 0x01};
-unsigned char RtpSink::AUDIO_START4[] = {0x00, 0x00, 0x00, 0x00};
-
-
-RtpSink::RtpSink(TrackBase* tb, const HIp4Addr& addr, HUSN payload_type)
-    :sink_bass_t(tb, addr),
+UdpRtpSink::UdpRtpSink(TrackBase* tb, const HIp4Addr& addr, HUSN payload_type)
+    :rtp_base_t(tb),
+     sink_base_t(addr),
     m_payload_type(payload_type),
     m_last_rtp(0), m_last_rtp_time(0) {
 
@@ -23,19 +20,23 @@ RtpSink::RtpSink(TrackBase* tb, const HIp4Addr& addr, HUSN payload_type)
 }
 
 
-RtpSink::~RtpSink() noexcept {
+UdpRtpSink::~UdpRtpSink() noexcept {
 
 }
 
 
-void RtpSink::SendPack(const MediaPacket& packet) {    
+void UdpRtpSink::SendPack(const MediaPacket& packet) {    
 
     m_last_rtp = GetRtpTimestamp(packet);
 
     if (packet.GetRefBuffer().GetLength() < MAX_RTP_LENGTH) {
-        send_single_nalu_uint(packet);        
+
+        send_single_nalu_uint(packet);
+
     } else {
+
         send_fregmentation_nalu_uints(packet);
+
     }
 
     m_last_rtp_time = av_gettime();
@@ -43,8 +44,7 @@ void RtpSink::SendPack(const MediaPacket& packet) {
 }
 
 
-
-HUN RtpSink::GetRtcpNtpRtpTimestamp() const {
+HUN UdpRtpSink::GetRtcpNtpRtpTimestamp() const {
 
     if (GetTrack() == nullptr) {
         return 0;
@@ -56,27 +56,22 @@ HUN RtpSink::GetRtcpNtpRtpTimestamp() const {
     HUN twdst = static_cast<HUN>(av_rescale_q(time_dis, AVRational{1, 1000000}, 
         AVRational{GetTrack()->GetTimebase().num, GetTrack()->GetFrequency()}));
 
-    /*LOG_NORMAL("trackid[%d] sample_rate[%u] num[%d] den[%d] twdst[%u] timedis[%u]",
-        GetTrack()->GetTrackId(), 
-        GetTrack()->GetFrequency(),
-        GetTrack()->GetTimebase().num, 
-        GetTrack()->GetTimebase().den, twdst, time_dis);*/
-
     return m_last_rtp + twdst;
 
 }
 
 
-const HUdpSock& RtpSink::getSocket() const {
+const HSocket& UdpRtpSink::getSocket() const noexcept {
 
     return GetTrack()->GetRtpSocket();
 
 }
 
 
-void RtpSink::send_single_nalu_uint(const MediaPacket& packet) {
+void UdpRtpSink::send_single_nalu_uint(const MediaPacket& packet) {
 
     HIOOutputBuffer buffer;
+    HUCH AUDIO_START4[] = {0x0, 0x0, 0x0, 0x0};
 
     HN naluLen = packet.GetRefBuffer().GetLength();
     HCUSZ naluBuf = static_cast<HCUSZ>(packet.GetRefBuffer().Data());
@@ -111,7 +106,7 @@ void RtpSink::send_single_nalu_uint(const MediaPacket& packet) {
 }
 
 
-void RtpSink::send_fregmentation_nalu_uints(const MediaPacket& packet) {
+void UdpRtpSink::send_fregmentation_nalu_uints(const MediaPacket& packet) {
 
     HIOOutputBuffer buffer;
 
@@ -179,7 +174,7 @@ void RtpSink::send_fregmentation_nalu_uints(const MediaPacket& packet) {
 }
 
 
-void RtpSink::common_rtsp_header(const MediaPacket& packet,  
+void UdpRtpSink::common_rtsp_header(const MediaPacket& packet,  
     HIOOutputBuffer& buffer, bool setMarket) {
 
     HOutputPacketBuffer& header = buffer.GetHeader(); 
@@ -199,9 +194,9 @@ void RtpSink::common_rtsp_header(const MediaPacket& packet,
 }
 
 
-HSocket::size_type RtpSink::send_buffer(HIOOutputBuffer& buffer) {
+HSocket::size_type UdpRtpSink::send_buffer(HIOOutputBuffer& buffer) {
    
-    const HUdpSock& sock = getSocket();
+    const HSocket& sock = getSocket();
     IncrePacketCount();
     HUdpSock::size_type ret = buffer.WriteIo(sock);
     IncreByteCount(ret);
@@ -215,60 +210,57 @@ HSocket::size_type RtpSink::send_buffer(HIOOutputBuffer& buffer) {
 }
 
 
-H264RtpSink::H264RtpSink(TrackBase* tb, const HIp4Addr& addr)
+H264UdpRtpSink::H264UdpRtpSink(TrackBase* tb, const HIp4Addr& addr)
     : base_class_t(tb, addr, static_cast<HUSN>(RTP_PAYTYPE::H264_PT)) {
 
 }
 
 
-H264RtpSink::~H264RtpSink() noexcept {
+H264UdpRtpSink::~H264UdpRtpSink() noexcept {
 
 }
 
 
-HUN H264RtpSink::GetRtpTimestamp(const MediaPacket& packet) const noexcept {
+HUN H264UdpRtpSink::GetRtpTimestamp(const MediaPacket& packet) const noexcept {
 
     return GetTimebase() + static_cast<HUN>(packet.GetRtpPts());
-    //return GetTimebase() + static_cast<HUN>(packet.GetPts());
 
 }
 
 
-AacRtpSink::AacRtpSink(TrackBase* tb, const HIp4Addr& addr)
+AacUdpRtpSink::AacUdpRtpSink(TrackBase* tb, const HIp4Addr& addr)
     : base_class_t(tb, addr, static_cast<HUSN>(RTP_PAYTYPE::AAC_PT)) {
 
 }
 
 
-AacRtpSink::~AacRtpSink() noexcept {
+AacUdpRtpSink::~AacUdpRtpSink() noexcept {
     
 }
 
 
-HUN AacRtpSink::GetRtpTimestamp(const MediaPacket& packet) const noexcept {
+HUN AacUdpRtpSink::GetRtpTimestamp(const MediaPacket& packet) const noexcept {
 
     return GetTimebase() + static_cast<HUN>(packet.GetPts());
 
 }
 
 
-
-unsigned char TcpRtpBase::TCP_AUDIO_START4[] = {0x00, 0x00, 0x00, 0x00};
-
-TcpRtpBase::TcpRtpBase(TrackBase* tb, const HTcpSocket& sock, HUSN payload_type) noexcept 
-    : base_class_t(tb, sock) ,
+TcpRtpSink::TcpRtpSink(TrackBase* tb, const HTcpSocket& sock, HUN channel_id, HUSN payload_type) noexcept 
+    : rtp_base_t(tb),
+    tcp_sink_base_t(sock, channel_id) ,
     m_payload_type(payload_type),
     m_last_rtp(0), m_last_rtp_time(0) {
 
 }
 
 
-TcpRtpBase::~TcpRtpBase() noexcept {
+TcpRtpSink::~TcpRtpSink() noexcept {
 
 }
 
 
-void TcpRtpBase::SendPack(const MediaPacket& packet) {
+void TcpRtpSink::SendPack(const MediaPacket& packet) {
     
     m_last_rtp = GetRtpTimestamp(packet);
 
@@ -279,7 +271,7 @@ void TcpRtpBase::SendPack(const MediaPacket& packet) {
 }
 
 
-HUN TcpRtpBase::GetRtcpNtpRtpTimestamp() const {
+HUN TcpRtpSink::GetRtcpNtpRtpTimestamp() const {
 
     if (GetTrack() == nullptr) {
         return 0;
@@ -296,7 +288,7 @@ HUN TcpRtpBase::GetRtcpNtpRtpTimestamp() const {
 }
 
 
-void TcpRtpBase::common_rtsp_header(const MediaPacket& packet,  
+void TcpRtpSink::common_rtsp_header(const MediaPacket& packet,  
     HIOOutputBuffer& buffer, bool setMarket) {
 
     HOutputPacketBuffer& header = buffer.GetHeader(); 
@@ -316,9 +308,10 @@ void TcpRtpBase::common_rtsp_header(const MediaPacket& packet,
 }
 
 
-void TcpRtpBase::send_over_tcp(const MediaPacket& packet) {
+void TcpRtpSink::send_over_tcp(const MediaPacket& packet) {
 
     HIOOutputBuffer buffer;
+    HUCH AUDIO_START4[] = {0x0, 0x0, 0x0, 0x0};
 
     HN naluLen = packet.GetRefBuffer().GetLength();
     HCUSZ naluBuf = static_cast<HCUSZ>(packet.GetRefBuffer().Data());
@@ -327,11 +320,11 @@ void TcpRtpBase::send_over_tcp(const MediaPacket& packet) {
 
     if (packet.GetTrackType() == TRACK_TYPE::AUDIO) {
         // 4 bytes for audio
-        TCP_AUDIO_START4[0] = 0x00;
-        TCP_AUDIO_START4[1] = 0x10;
-        TCP_AUDIO_START4[2] = (naluLen & 0x1FE0) >> 5;
-        TCP_AUDIO_START4[3] = (naluLen & 0x1F) << 3;
-        buffer.AddIo(TCP_AUDIO_START4, 4);
+        AUDIO_START4[0] = 0x00;
+        AUDIO_START4[1] = 0x10;
+        AUDIO_START4[2] = (naluLen & 0x1FE0) >> 5;
+        AUDIO_START4[3] = (naluLen & 0x1F) << 3;
+        buffer.AddIo(AUDIO_START4, 4);
     }
 
     if (packet.GetTrackType() == TRACK_TYPE::VIDEO) {
@@ -351,9 +344,9 @@ void TcpRtpBase::send_over_tcp(const MediaPacket& packet) {
 }
 
 
-HSocket::size_type TcpRtpBase::send_buffer(HIOOutputBuffer& buffer) {
+HSocket::size_type TcpRtpSink::send_buffer(HIOOutputBuffer& buffer) {
 
-    const HTcpSocket& sock = getSocket();
+    const HSocket& sock = getSocket();
     IncrePacketCount();
 
     HUN data_len = buffer.GetDataLength();
@@ -378,8 +371,8 @@ HSocket::size_type TcpRtpBase::send_buffer(HIOOutputBuffer& buffer) {
 }
 
 
-H264TcpRtpSink::H264TcpRtpSink(TrackBase* tb, const HTcpSocket& sock)
-    :base_class_t(tb, sock, static_cast<HUSN>(RTP_PAYTYPE::H264_PT)) {
+H264TcpRtpSink::H264TcpRtpSink(TrackBase* tb, const HTcpSocket& sock, HUN channel_id)
+    :base_class_t(tb, sock, channel_id, static_cast<HUSN>(RTP_PAYTYPE::H264_PT)) {
 
 }
 
@@ -396,8 +389,8 @@ HUN H264TcpRtpSink::GetRtpTimestamp(const MediaPacket& packet) const noexcept {
 }
 
 
-AacTcpRtpSink::AacTcpRtpSink(TrackBase* tb, const HTcpSocket& sock)
-    : base_class_t(tb, sock, static_cast<HUSN>(RTP_PAYTYPE::AAC_PT)) {
+AacTcpRtpSink::AacTcpRtpSink(TrackBase* tb, const HTcpSocket& sock, HUN channel_id)
+    : base_class_t(tb, sock, channel_id, static_cast<HUSN>(RTP_PAYTYPE::AAC_PT)) {
 
 }
 
@@ -408,5 +401,8 @@ AacTcpRtpSink::~AacTcpRtpSink() noexcept {
 
 
 HUN AacTcpRtpSink::GetRtpTimestamp(const MediaPacket& packet) const noexcept {
+
     return GetTimebase() + static_cast<HUN>(packet.GetPts());
+    
 }
+

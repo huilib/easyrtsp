@@ -23,43 +23,37 @@ enum class RTCP_PADLOAD_TYPE : HUCH {
     IDMS = 211,         // IDMS Settings [RFC7272]
 };
 
-
-using rtcp_sink_base = UdpSinkBase<tagRtcp>;
-
-class RtcpSink : public rtcp_sink_base {
+class UdpRtcpSink : public RtcpBase, public UdpSinkBase {
 protected:
-    using base_class_t = rtcp_sink_base;
-    using rtp_class_t = mid_sink_base<tagRtp>;
+    using rtcp_base_t = RtcpBase;
+    using sink_base_t = UdpSinkBase;
 
 public:
-    RtcpSink(TrackBase* tb, const HIp4Addr& addr, rtp_class_t* rtp_sink);
+    UdpRtcpSink(RtpBase* rtp, const HIp4Addr& addr);
 
-    virtual ~RtcpSink() noexcept;
+    virtual ~UdpRtcpSink() noexcept;
 
 public:
     void SendReport() override;    
 
 private:
-    const HUdpSock& getSocket() const override;
+    const HSocket& getSocket() const noexcept override;
 
     void addSenderReport(HIOOutputBuffer&);
 
     void equeue_common_prefix(RTCP_PADLOAD_TYPE pt,  unsigned numExtraWords, HOutputPacketBuffer&);
 
-    HSocket::size_type send_buffer(HIOOutputBuffer&);
-
-private:    
-    rtp_class_t* m_rtp_sink;
+    HSocket::size_type send_buffer(HIOOutputBuffer&) const;
 };
 
 
-using tcp_rtcp_sink_base = TcpSinkBase<tagRtcp>;
-class TcpRtcpSink : public tcp_rtcp_sink_base {
+class TcpRtcpSink : public RtcpBase, public TcpSinkBase {
 protected:
-    using base_class_t = tcp_rtcp_sink_base;
+    using rtcp_base_t = RtcpBase;
+    using sink_base_t = TcpSinkBase;
 
 public:
-    TcpRtcpSink(TrackBase* tb, const HTcpSocket& sock, TcpRtpBase* rtp_sink);
+    TcpRtcpSink(RtpBase* rtp, const HTcpSocket& sock, HUN channel_id);
 
     virtual ~TcpRtcpSink() noexcept;
 
@@ -72,9 +66,7 @@ private:
     void equeue_common_prefix(RTCP_PADLOAD_TYPE pt,  unsigned numExtraWords, HOutputPacketBuffer&);
 
     HSocket::size_type send_buffer(HIOOutputBuffer&);
-
-private:
-    TcpRtpBase* m_rtp_sink;
 };
 
 #endif //__H_RTPRTCP_RTCPSINK_H__
+

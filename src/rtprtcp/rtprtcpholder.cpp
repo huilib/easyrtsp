@@ -8,18 +8,16 @@ TrackSink::TrackSink(TrackBase* tb, const HTcpSocket& sock, HUN channel_id) noex
     m_rtcp_mode(RtcpTransportMode::INDENPENDENT),
     m_rtp_sink(nullptr), m_rtcp_sink(nullptr){
     
-    TcpRtpBase* tcp_rtp = nullptr;
+    TcpRtpSink* tcp_rtp = nullptr;
     if (tb->GetTrackType() == TRACK_TYPE::VIDEO) {
-        tcp_rtp = new H264TcpRtpSink(tb, sock);
+        tcp_rtp = new H264TcpRtpSink(tb, sock, channel_id);
     }else {
-        tcp_rtp = new AacTcpRtpSink(tb, sock);
+        tcp_rtp = new AacTcpRtpSink(tb, sock, channel_id);
     }
-
-    tcp_rtp->SetChannelId(channel_id);
     
     m_rtp_sink = tcp_rtp;
 
-    m_rtcp_sink = new TcpRtcpSink(tb, sock, tcp_rtp);
+    m_rtcp_sink = new TcpRtcpSink(m_rtp_sink, sock, channel_id);
 
 }
 
@@ -30,13 +28,13 @@ TrackSink::TrackSink(TrackBase* tb, HSTR strIp, HN rtp_port) noexcept
 
     HIp4Addr rtp_addr(strIp, rtp_port);
     if (tb->GetTrackType() == TRACK_TYPE::VIDEO) {
-        m_rtp_sink = new H264RtpSink(tb, rtp_addr);
+        m_rtp_sink = new H264UdpRtpSink(tb, rtp_addr);
     }else {
-        m_rtp_sink = new AacRtpSink(tb, rtp_addr);
+        m_rtp_sink = new AacUdpRtpSink(tb, rtp_addr);
     }
 
     HIp4Addr rtcp_addr(strIp, rtp_port+1);
-    m_rtcp_sink = new RtcpSink(tb, rtcp_addr, m_rtp_sink);
+    m_rtcp_sink = new UdpRtcpSink(m_rtp_sink, rtp_addr);
 
 }
 

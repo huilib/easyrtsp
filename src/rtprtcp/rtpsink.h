@@ -10,18 +10,16 @@
 
 using namespace HUICPP;
 
-using rtp_sink_base = UdpSinkBase<tagRtp>;
-class RtpSink : public rtp_sink_base {
+class UdpRtpSink : public RtpBase, public UdpSinkBase {
 protected:
-    using sink_bass_t = rtp_sink_base;
+    using rtp_base_t = RtpBase;
+    using sink_base_t = UdpSinkBase;
     static constexpr const HN MAX_RTP_LENGTH = 1400;
-    static unsigned char START_KEY4[];
-    static unsigned char AUDIO_START4[];
 
 public:
-    RtpSink(TrackBase* tb, const HIp4Addr& addr, HUSN payload_type);
+    UdpRtpSink(TrackBase* tb, const HIp4Addr& addr, HUSN payload_type);
 
-    virtual ~RtpSink() noexcept;
+    virtual ~UdpRtpSink() noexcept;
 
 public:
     void SendPack(const MediaPacket& packet) override;
@@ -33,7 +31,7 @@ public:
     virtual HUN GetRtpTimestamp(const MediaPacket& packet) const noexcept = 0;
 
 private:   
-    const HUdpSock& getSocket() const override;
+    const HSocket& getSocket() const noexcept override;
     void send_single_nalu_uint(const MediaPacket& packet);
     void send_fregmentation_nalu_uints(const MediaPacket& packet);
 
@@ -49,14 +47,14 @@ protected:
 };
 
 
-class H264RtpSink : public RtpSink {
+class H264UdpRtpSink : public UdpRtpSink {
 private:
-    using base_class_t = RtpSink;
+    using base_class_t = UdpRtpSink;
 
 public:
-    H264RtpSink(TrackBase* tb, const HIp4Addr& addr);
+    H264UdpRtpSink(TrackBase* tb, const HIp4Addr& addr);
 
-    ~H264RtpSink() noexcept;
+    ~H264UdpRtpSink() noexcept;
 
 protected:
     HUN GetRtpTimestamp(const MediaPacket& packet) const noexcept override;
@@ -65,14 +63,14 @@ protected:
 };
 
 
-class AacRtpSink : public RtpSink {
+class AacUdpRtpSink : public UdpRtpSink {
 private:
-    using base_class_t = RtpSink;
+    using base_class_t = UdpRtpSink;
 
 public:
-    AacRtpSink(TrackBase* tb, const HIp4Addr& addr);
+    AacUdpRtpSink(TrackBase* tb, const HIp4Addr& addr);
 
-    ~AacRtpSink() noexcept;
+    ~AacUdpRtpSink() noexcept;
 
 protected:
     HUN GetRtpTimestamp(const MediaPacket& packet) const noexcept override;
@@ -80,16 +78,16 @@ protected:
 };
 
 
-using tcp_rtp_sink_base = TcpSinkBase<tagRtp>;
-class TcpRtpBase : public tcp_rtp_sink_base {
+
+class TcpRtpSink : public RtpBase, public TcpSinkBase {
 private:
-    using base_class_t = tcp_rtp_sink_base;
-    static unsigned char TCP_AUDIO_START4[];
+    using rtp_base_t = RtpBase;
+    using tcp_sink_base_t = TcpSinkBase;
 
 public:
-    TcpRtpBase(TrackBase* tb, const HTcpSocket& sock, HUSN payload_type) noexcept;
+    TcpRtpSink(TrackBase* tb, const HTcpSocket& sock, HUN channel_id, HUSN payload_type) noexcept;
 
-    virtual ~TcpRtpBase() noexcept;
+    virtual ~TcpRtpSink() noexcept;
 
 public:
     void SendPack(const MediaPacket& packet);
@@ -114,12 +112,12 @@ protected:
 };
 
 
-class H264TcpRtpSink : public TcpRtpBase {
+class H264TcpRtpSink : public TcpRtpSink {
 private:
-    using base_class_t = TcpRtpBase;
+    using base_class_t = TcpRtpSink;
 
 public:
-    H264TcpRtpSink(TrackBase* tb, const HTcpSocket& sock);
+    H264TcpRtpSink(TrackBase* tb, const HTcpSocket& sock, HUN channel_id);
 
     ~H264TcpRtpSink() noexcept;
 
@@ -130,12 +128,12 @@ protected:
 };
 
 
-class AacTcpRtpSink : public TcpRtpBase {
+class AacTcpRtpSink : public TcpRtpSink {
 private:
-    using base_class_t = TcpRtpBase;
+    using base_class_t = TcpRtpSink;
 
 public:
-    AacTcpRtpSink(TrackBase* tb, const HTcpSocket& sock);
+    AacTcpRtpSink(TrackBase* tb, const HTcpSocket& sock, HUN channel_id);
 
     ~AacTcpRtpSink() noexcept;
 
@@ -143,7 +141,6 @@ protected:
     HUN GetRtpTimestamp(const MediaPacket& packet) const noexcept override;
     
 };
-
 
 
 
