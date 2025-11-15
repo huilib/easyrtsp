@@ -3,6 +3,7 @@
 #include "rtspconnect.h"
 #include "rtspsession.h"
 #include "requests/rtsprequest.h"
+#include "rtprtcp/rtsptcpreader.h"
 
 #include <htodoholder.h>
 #include <hlog.h>
@@ -16,7 +17,7 @@ RtspConnect::RtspConnect(RtspServer& server, HTcpSocket&& sock, HIp4Addr& addr) 
     m_server(server), m_socket(std::move(sock)), m_client_addr(addr),
     m_request_buffer(), m_response_buffer(),
     m_bActive(true), m_last_active_time(),
-    m_session(nullptr) {
+    m_session(nullptr), m_bTcpConnection(false) {
         
     signal(SIGPIPE, SIG_IGN);
 
@@ -34,6 +35,8 @@ RtspConnect::~ RtspConnect() {
 
     removeSchedule();
 
+    HDELP(m_tcp_reader);
+
     HDELP(m_session);
 
 }
@@ -48,6 +51,24 @@ bool RtspConnect::IsActive() const noexcept {
     }*/
 
     return m_bActive;
+
+}
+
+
+HRET RtspConnect::SetAsTcpConnection() {
+
+    HASSERT_MSG_RETURN(m_session != nullptr, "session is null", SRC_ERR);
+
+    m_tcp_reader = new RtspTcpReader(m_socket, m_request_buffer, m_session);
+    NULLPOINTER_CHECK(m_tcp_reader);
+
+    HNOTOK_RETURN(m_socket.SetupSendBufLength(12 * 1024 * 1024));
+
+    HNOTOK_RETURN(m_socket.SetupRecvBufLength());
+
+    m_bTcpConnection = true;
+
+    HRETURN_OK;
 
 }
 
@@ -81,17 +102,38 @@ bool RtspConnect::CheckSession(HCSTRR strSessionId) {
 
 void RtspConnect::incomingRequestHander(HUN ) {
 
-    if (readClientRequest() > 0) {
+    if (not m_bTcpConnection) {
+        if (readClientRequest() > 0) {
 
-        handleRequest();
+            handleRequest();
 
-    } 
-    // remove select fd when delete connection.
-    /*else {
+        } 
+    } else {
 
-        Schedule().ScheduleDelayedTask(0, std::bind(&RtspConnect::removeSchedule, this));
+        RtspTcpReader::RTR_STATE res = m_tcp_reader->Read();
+        if (res == RtspTcpReader::RTR_STATE::RTR_ERROR) {
+            m_bActive = false;
+            return;
+        }
 
-    }*/
+        if (res == RtspTcpReader::RTR_STATE::RTR_WAIT) {
+            return;
+        }
+
+        HN channelid = m_tcp_reader->GetChannelId();
+
+        if (channelid == 1 or channelid == 3) {
+            // TODO: WE NEED TO HANDLE RTCP REQUEST.
+            //LOG_NORMAL("receive rtcp over tcp request. miss it");
+            m_request_buffer.Reset();
+            return;
+        }
+
+        if (m_tcp_reader->GetLength() > 0) {
+            handleRequest();
+        }
+                
+    }
 
 }
 

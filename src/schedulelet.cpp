@@ -23,7 +23,7 @@ ScheduleLet::~ScheduleLet() {
 
 HRET ScheduleLet::InitServlet() {
 
-    m_rtsp_server = new RtspServer("0.0.0.0", 6666);
+    m_rtsp_server = new RtspServer("0.0.0.0", 554);
     NULLPOINTER_CHECK(m_rtsp_server);
 
     m_rtsp_server->SetLet(this);

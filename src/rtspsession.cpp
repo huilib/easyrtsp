@@ -55,10 +55,10 @@ void RtspSession::SetAudioRtpPorts(HUN rtp_port, HUN) {
 }
 
 
-void RtspSession::SetTcpRtpChannel(TRACK_TYPE tt, HUN channelid) {
+void RtspSession::SetTcpRtpChannel(TRACK_TYPE tt, HUN channelid1, HUN channelid2) {
 
     m_rtp_rtcp.AddTrackSink(m_stream->GetTrack(tt), m_connection->GetRtspSocket(), 
-        channelid);
+        channelid1, channelid2);
 
 }
 
@@ -82,6 +82,15 @@ bool RtspSession::CheckStream(StreamBase* stream) noexcept {
 void RtspSession::Play() {
 
     m_bPlay = true;
+
+    if (m_rtp_rtcp.GetTransportMode() == RtpTransportMode::RTP_TCP) {
+
+        // VLC: Hit limit when reading incoming packet over TCP. 
+        // The remote endpoint is using a buggy implementation of RTP/RTCP-over-TCP.
+        HIGNORE_RETURN(m_connection->SetAsTcpConnection());
+
+        m_rtp_rtcp.SendSRSD();
+    }
 
     // bind: session => stream;
     m_stream->AddOb(this);
@@ -112,6 +121,13 @@ void RtspSession::OnRtcpActive() {
     }
 
     m_rtp_rtcp.SendSRSD();
+
+}
+
+
+bool RtspSession::IsInvalidChannelId(HUN channelId) const noexcept {
+
+    return m_rtp_rtcp.IsInvalidChannelId(channelId);
 
 }
 

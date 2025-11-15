@@ -11,7 +11,7 @@
 
 class TrackSink {    
 public:
-    TrackSink(TrackBase*, const HTcpSocket& sock, HUN channel_id) noexcept;
+    TrackSink(TrackBase*, const HTcpSocket& sock, HUN channel_id1, HUN channel_id2) noexcept;
     TrackSink(TrackBase*, HSTR strIp, HN rtp_port) noexcept;
 
     ~TrackSink() noexcept;
@@ -26,6 +26,8 @@ public:
     const RtpBase* GetRtpSink() const noexcept { return m_rtp_sink; }
 
     void SendRtcpReport();
+
+    bool IsInvalidChannelId(HUN channelId) const noexcept;
 
 private:
     RtpTransportMode m_rtp_mode;
@@ -51,12 +53,14 @@ public:
 
     void SetTransportMode(RtpTransportMode mode) noexcept { m_rtp_tran_mode = mode; }
 
+    bool IsInvalidChannelId(HUN channelId) const noexcept;
+
 public:
     void SetClientIp(const HIp4Addr& addr);
 
     bool AddTrackSink(TrackBase*, HN port);
 
-    bool AddTrackSink(TrackBase*, const HTcpSocket& sock, HUN channel_id);
+    bool AddTrackSink(TrackBase*, const HTcpSocket& sock, HUN channel_id1, HUN channel_id2);
 
     void SentSenderReport();
 
