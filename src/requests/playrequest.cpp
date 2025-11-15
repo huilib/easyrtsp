@@ -48,7 +48,7 @@ RTSP_REQUEST_CODE PlayRequest::doWork(HIOBuffer& buffer) {
     for (std::vector<TrackSink*>::size_type i = 0; i < sinks.size(); ++i) {
         const TrackSink* ts = sinks[i];
         ss << "url=rtsp://" << strLocalIP << "/normal_h264/track"
-            << ts->GetTrackInfo()->GetTrackId() << ";seq="
+            << ts->GetTrackInfo()->GetTrackId() + 1 << ";seq="
             << ts->GetRtpSink()->GetSequence() << ";rtptime="
             << ts->GetRtpSink()->GetTimebase() << ",";
     }

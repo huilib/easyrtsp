@@ -280,6 +280,10 @@ HUN TcpRtpSink::GetRtcpNtpRtpTimestamp() const {
     HULL nowav = av_gettime();
     HUN time_dis = static_cast<HUN>(nowav - m_last_rtp_time);
 
+    /*LOG_NORMAL("track timebase num[%d] den[%d] frequency[%d] dis[%d]", 
+        GetTrack()->GetTimebase().num, GetTrack()->GetTimebase().den,
+        GetTrack()->GetFrequency(), time_dis);*/
+
     HUN twdst = static_cast<HUN>(av_rescale_q(time_dis, AVRational{1, 1000000}, 
         AVRational{GetTrack()->GetTimebase().num, GetTrack()->GetFrequency()}));
 
@@ -349,7 +353,7 @@ HSocket::size_type TcpRtpSink::send_buffer(HIOOutputBuffer& buffer) {
     const HSocket& sock = getSocket();
     IncrePacketCount();
 
-    HUN data_len = buffer.GetDataLength();
+    HUN data_len = buffer.GetTotalLength();
     {
         HUCH framingheader [4] = {0};
         framingheader[0] = '$';
@@ -361,10 +365,12 @@ HSocket::size_type TcpRtpSink::send_buffer(HIOOutputBuffer& buffer) {
     
     HUdpSock::size_type ret = buffer.WriteIo(sock);
     IncreByteCount(ret);
+
+    //LOG_NORMAL("tcp send packet return[%d]", ret);
     
-    if (data_len != ret) {
+    /*if (data_len != ret) {
         LOG_WARNING("all length[%u] send length[%u]", data_len, ret);
-    }
+    }*/
 
     return ret;
 

@@ -33,7 +33,7 @@ public:
 
     void SetAudioRtpPorts(HUN rtp_port, HUN rtcp_port);
 
-    void SetTcpRtpChannel(TRACK_TYPE TT, HUN channelid);
+    void SetTcpRtpChannel(TRACK_TYPE TT, HUN channelid1, HUN channelid2);
 
     bool CheckStream(StreamBase* stream) noexcept;
     StreamBase* GetStream() noexcept { return m_stream; }
@@ -51,6 +51,8 @@ public:
 
     RtpRtcpHolder& GetRtpRtcpHolder() noexcept { return m_rtp_rtcp; }
     const RtpRtcpHolder& GetRtpRtcpHolder() const noexcept { return m_rtp_rtcp; }
+
+    bool IsInvalidChannelId(HUN channelId) const noexcept;
 
 private:
     void sent_packet(const MediaPacket& packet);

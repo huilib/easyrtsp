@@ -110,9 +110,9 @@ void TcpRtcpSink::SendReport() {
 }
 
 
-void TcpRtcpSink::addSenderReport(HIOOutputBuffer& /*buffer*/) {
+void TcpRtcpSink::addSenderReport(HIOOutputBuffer& buffer) {
 
-    /*HOutputPacketBuffer& header = buffer.GetHeader(); 
+    HOutputPacketBuffer& header = buffer.GetHeader(); 
 
     equeue_common_prefix(RTCP_PADLOAD_TYPE::SR, 5, header);
 
@@ -128,12 +128,12 @@ void TcpRtcpSink::addSenderReport(HIOOutputBuffer& /*buffer*/) {
 
     // NTP timestamp least-significant word
     //unsigned rtpTimestamp = fSink->convertToRTPTimestamp(timeNow);
-    HUN rtpTimestamp = m_rtp_sink->GetRtcpNtpRtpTimestamp();
+    HUN rtpTimestamp = GetRtp()->GetRtcpNtpRtpTimestamp();
     header.EnqueueWord(rtpTimestamp); // RTP ts
 
     // Insert the packet and byte counts:
-    header.EnqueueWord(m_rtp_sink->GetPacketCount());
-    header.EnqueueWord(m_rtp_sink->GetByteCount());*/
+    header.EnqueueWord(GetRtp()->GetPacketCount());
+    header.EnqueueWord(GetRtp()->GetByteCount());
 
 }
 
@@ -149,7 +149,7 @@ void TcpRtcpSink::equeue_common_prefix(RTCP_PADLOAD_TYPE pt,  unsigned numExtraW
     rtcpHdr |= (1 + numExtraWords + 6 * numReportingSources);
 
     buffer.EnqueueWord(rtcpHdr);
-    //buffer.EnqueueWord(m_rtp_sink->GetSSRC());
+    buffer.EnqueueWord(GetRtp()->GetSSRC());
 
 }
 
@@ -158,7 +158,7 @@ HSocket::size_type TcpRtcpSink::send_buffer(HIOOutputBuffer& buffer) {
 
     const HSocket& sock = getSocket();
 
-    HUN data_len = buffer.GetDataLength();
+    HUN data_len = buffer.GetTotalLength();
     {
         HUCH framingheader [4] = {0};
         framingheader[0] = '$';
@@ -169,6 +169,8 @@ HSocket::size_type TcpRtcpSink::send_buffer(HIOOutputBuffer& buffer) {
     }
 
     HUdpSock::size_type ret = buffer.WriteIo(sock);
+
+    //LOG_NORMAL("send tcp rtcp return[%d] we need to send data len[%d]", ret, data_len);
 
     return ret;
 

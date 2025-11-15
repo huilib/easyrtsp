@@ -3,21 +3,21 @@
 #include "rtprtcpholder.h"
 #include <hlog.h>
 
-TrackSink::TrackSink(TrackBase* tb, const HTcpSocket& sock, HUN channel_id) noexcept 
+TrackSink::TrackSink(TrackBase* tb, const HTcpSocket& sock, HUN channel_id1, HUN channel_id2) noexcept 
     : m_rtp_mode(RtpTransportMode::RTP_TCP),
     m_rtcp_mode(RtcpTransportMode::INDENPENDENT),
     m_rtp_sink(nullptr), m_rtcp_sink(nullptr){
     
     TcpRtpSink* tcp_rtp = nullptr;
     if (tb->GetTrackType() == TRACK_TYPE::VIDEO) {
-        tcp_rtp = new H264TcpRtpSink(tb, sock, channel_id);
+        tcp_rtp = new H264TcpRtpSink(tb, sock, channel_id1);
     }else {
-        tcp_rtp = new AacTcpRtpSink(tb, sock, channel_id);
+        tcp_rtp = new AacTcpRtpSink(tb, sock, channel_id1);
     }
     
     m_rtp_sink = tcp_rtp;
 
-    m_rtcp_sink = new TcpRtcpSink(m_rtp_sink, sock, channel_id);
+    m_rtcp_sink = new TcpRtcpSink(m_rtp_sink, sock, channel_id2);
 
 }
 
@@ -74,6 +74,26 @@ void TrackSink::SendRtcpReport() {
 }
 
 
+bool TrackSink::IsInvalidChannelId(HUN channelId) const noexcept {
+
+    if (m_rtp_mode != RtpTransportMode::RTP_TCP) {
+        return false;
+    }
+
+    TcpRtpSink* rtpsink = reinterpret_cast<TcpRtpSink*>(m_rtp_sink);
+    if (rtpsink->GetChannelId() == channelId) {
+        return true;
+    }
+
+    TcpRtcpSink* rtcpsink = reinterpret_cast<TcpRtcpSink*>(m_rtcp_sink);
+    if (rtcpsink->GetChannelId() == channelId) {
+        return true;
+    }
+
+    return false;
+}
+
+
 RtpRtcpHolder::RtpRtcpHolder() noexcept
     : m_client_addr(),
     m_track_mode(TrackTransportMode::INDEPENDENT),
@@ -113,8 +133,6 @@ void RtpRtcpHolder::SendPack(const MediaPacket& packet) {
 
 void RtpRtcpHolder::SendSRSD() {
 
-    //LOG_NORMAL("track sink size[%d]", m_track_sinks.size());
-
     for(std::vector<TrackSink*>::size_type i = 0; i < m_track_sinks.size(); ++i) {
 
         TrackSink* ts = m_track_sinks[i];
@@ -128,6 +146,27 @@ void RtpRtcpHolder::SendSRSD() {
     }
 
     //FUN_END;
+}
+
+
+bool RtpRtcpHolder::IsInvalidChannelId(HUN channelId) const noexcept {
+
+    for(std::vector<TrackSink*>::size_type i = 0; i < m_track_sinks.size(); ++i) {
+
+        TrackSink* ts = m_track_sinks[i];
+
+        if(HUNLIKELY(ts == nullptr)) {
+            continue;
+        }
+
+        if (ts->IsInvalidChannelId(channelId)) {
+            return true;
+        }
+
+    }
+
+    return false;
+
 }
 
 
@@ -161,7 +200,7 @@ bool RtpRtcpHolder::AddTrackSink(TrackBase* tb, HN port) {
 }
 
 
-bool RtpRtcpHolder::AddTrackSink(TrackBase* tb, const HTcpSocket& sock, HUN channel_id) {
+bool RtpRtcpHolder::AddTrackSink(TrackBase* tb, const HTcpSocket& sock, HUN channelid1, HUN channel_id2) {
 
     for(std::vector<TrackSink*>::size_type i = 0; i < m_track_sinks.size(); ++i) {
 
@@ -173,7 +212,7 @@ bool RtpRtcpHolder::AddTrackSink(TrackBase* tb, const HTcpSocket& sock, HUN chan
 
     }
 
-    TrackSink* newsink = new TrackSink(tb, sock, channel_id);
+    TrackSink* newsink = new TrackSink(tb, sock, channelid1, channel_id2);
     m_track_sinks.push_back(newsink);
 
     return true;

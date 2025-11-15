@@ -39,6 +39,14 @@ RTSP_REQUEST_CODE SetupRequest::doWork(HIOBuffer& buffer) {
     }
 
     RtpRtcpHolder& holder = GetConnection()->GetSession()->GetRtpRtcpHolder();
+
+    RTSP_REQUEST_CODE res = RTSP_REQUEST_CODE::UNKOWN;
+
+    if (holder.GetTransportMode() == RtpTransportMode::RTP_UNKNOWN) {
+        // setup the type of transport at first time.
+        holder.SetTransportMode(rtm);
+    }
+
     if (holder.GetTransportMode() != RtpTransportMode::RTP_UNKNOWN
         and holder.GetTransportMode() != rtm) {
         LOG_ERROR("different transport type. request[%d] holder[%d]",
@@ -46,17 +54,12 @@ RTSP_REQUEST_CODE SetupRequest::doWork(HIOBuffer& buffer) {
         return RTSP_REQUEST_CODE::UNSUPPORT_TRANSPORT; 
     }
 
-    RTSP_REQUEST_CODE res = RTSP_REQUEST_CODE::UNKOWN;
     if (rtm == RtpTransportMode::RTP_TCP) {
         res = do_tcp(buffer);
     }
 
     if (rtm == RtpTransportMode::RTP_UDP) {
         res = do_udp(buffer);
-    }
-
-    if (res == RTSP_REQUEST_CODE::OK) {
-        holder.SetTransportMode(rtm);
     }
 
     return res;    
@@ -84,7 +87,7 @@ RTSP_REQUEST_CODE SetupRequest::do_tcp(HIOBuffer& buffer) {
     if (HStr(GetHeader().GetUrl().GetTrack()).Upper() == "TRACK2") {
         tt = TRACK_TYPE::AUDIO;
     }
-    GetConnection()->GetSession()->SetTcpRtpChannel(tt, channel0);
+    GetConnection()->GetSession()->SetTcpRtpChannel(tt, channel0, channel1);
 
     HCSTRR strSessionId = GetConnection()->GetSession()->GetSessionId();
 

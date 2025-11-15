@@ -10,6 +10,7 @@
 
 
 class RtspSession;
+class RtspTcpReader;
 class RtspConnect : public ScheduleOBjectbase {
 private:
     using base_class_t = ScheduleOBjectbase;
@@ -37,10 +38,14 @@ public:
 
     const HTcpSocket& GetRtspSocket() const noexcept { return m_socket; }
 
+    HRET SetAsTcpConnection();
+
 private:
     void incomingRequestHander(HUN );
 
     size_t readClientRequest();
+
+    HN readRtspTcpRequest();
 
     void handleRequest();
 
@@ -55,6 +60,8 @@ private:
     bool m_bActive;
     HTime m_last_active_time;
     RtspSession* m_session;
+    RtspTcpReader* m_tcp_reader;
+    bool m_bTcpConnection;
 };
 
 
