@@ -9,7 +9,7 @@
 #include "mediasource/streambase.h"
 #include "scheduleobjectbase.h"
 #include "sessionobserver.h"
-
+#include "utils/broadcasthelper.h"
 
 using namespace HUICPP;
 
@@ -65,6 +65,8 @@ private:
     StreamBase* m_stream;
 
     RtpRtcpHolder m_rtp_rtcp;
+
+    BroadcastHelper m_broad_helper;
 
     bool m_bPlay;
 

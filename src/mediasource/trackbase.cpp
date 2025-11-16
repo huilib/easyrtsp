@@ -61,18 +61,23 @@ TrackBase& TrackBase::SetupName() {
 
 HRET TrackBase::Init(HN port_rtp, HN port_rtcp) {
 
-    //LOG_NORMAL("trackbase init rtpport[%d] rtcpport[%d]", port_rtp, port_rtcp);
-
     // initialize rtp socket
     HNOTOK_MSG_RETURN(m_rtp_socket.Init(), "init rtp socket failed");
 
     HNOTOK_MSG_RETURN(m_rtp_socket.SetReuseAddr(), "set rtp socket reuseaddr failed");
 
-    HIp4Addr addrrtp("0.0.0.0", port_rtp);
+    HNOTOK_MSG_RETURN(m_rtp_socket.SetReusePort(), "set rtp socket reuseport failed");
+
+    HNOTOK_MSG_RETURN(m_rtp_socket.SetupMulticastLoop(), "setup rtp socket multicast failed");
+    
+    HCSTRR strLocalIP = HIp4Addr::GetLocalIp();
+
+    HIp4Addr addrrtp(strLocalIP, port_rtp);
     HNOTOK_MSG_RETURN(m_rtp_socket.Bind(addrrtp), "bind rtp socket failed");
 
-    HNOTOK_MSG_RETURN(m_rtp_socket.SetupSendBufLength(256 * 1024), "setup rtp socket sned buffer failed");
+    HNOTOK_MSG_RETURN(m_rtp_socket.SetupMulticastInterface(strLocalIP), "setup multicast interface failed");
 
+    HNOTOK_MSG_RETURN(m_rtp_socket.SetupSendBufLength(256 * 1024), "setup rtp socket sned buffer failed");
 
     // initialize rtcp socket
     HNOTOK_MSG_RETURN(m_rtcp_socket.Init(), "init rtcp socket failed");

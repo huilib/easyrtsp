@@ -17,7 +17,7 @@ RtspConnect::RtspConnect(RtspServer& server, HTcpSocket&& sock, HIp4Addr& addr) 
     m_server(server), m_socket(std::move(sock)), m_client_addr(addr),
     m_request_buffer(), m_response_buffer(),
     m_bActive(true), m_last_active_time(),
-    m_session(nullptr), m_bTcpConnection(false) {
+    m_session(nullptr), m_tcp_reader(nullptr), m_bTcpConnection(false) {
         
     signal(SIGPIPE, SIG_IGN);
 
@@ -25,6 +25,7 @@ RtspConnect::RtspConnect(RtspServer& server, HTcpSocket&& sock, HIp4Addr& addr) 
         this->Schedule().SetBackgroundHandling(m_socket.Fd(), FIT_READ | FIT_EXCEP, 
         std::bind(&RtspConnect::incomingRequestHander, this, std::placeholders::_1));
     });
+    
     //Schedule().SetBackgroundHandling(m_socket.Fd(), FIT_READ | FIT_EXCEP, 
     //    std::bind(&RtspConnect::incomingRequestHander, this, std::placeholders::_1));
 

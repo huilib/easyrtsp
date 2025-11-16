@@ -16,7 +16,7 @@ RtspSession::RtspSession(RtspConnect* connection)
     : schedule_base_t(), session_base_t(),
     m_connection(connection), m_strSessionId(), m_last_active(),
     m_stream(nullptr),
-    m_rtp_rtcp(),
+    m_rtp_rtcp(), m_broad_helper(),
     m_bPlay(false), 
     m_bNeedIFrame(true)  {
 
@@ -40,16 +40,33 @@ RtspSession::~RtspSession() {
 }
 
 
+#define BROADCAST_CHECK(type) if (m_stream == nullptr) {    \
+        return; \
+    }   \
+    TrackBase* tb = m_stream->GetTrack(TRACK_TYPE::type);  \
+    if (tb == nullptr) {    \
+        return; \
+    }   \
+    const HIp4Addr& addr = m_connection->GetClientIp(); \
+    HSTR strIP; \
+    HN port;    \
+    HIGNORE_RETURN(addr.GetAddrInfo(strIP, port));  \
+    m_broad_helper.AddBroadcast(tb->GetRtpSocket(), strIP)
+
 void RtspSession::SetVideoRtpPorts(HUN rtp_port, HUN) {
 
-    m_rtp_rtcp.AddTrackSink(m_stream->GetTrack(TRACK_TYPE::VIDEO), rtp_port);
+    BROADCAST_CHECK(VIDEO);
+
+    m_rtp_rtcp.AddTrackSink(tb, rtp_port);
 
 }
 
 
 void RtspSession::SetAudioRtpPorts(HUN rtp_port, HUN) {
 
-    m_rtp_rtcp.AddTrackSink(m_stream->GetTrack(TRACK_TYPE::AUDIO), rtp_port);
+    BROADCAST_CHECK(AUDIO);
+
+    m_rtp_rtcp.AddTrackSink(tb, rtp_port);
 
 
 }
