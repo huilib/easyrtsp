@@ -110,7 +110,7 @@ void UdpRtpSink::send_fregmentation_nalu_uints(const MediaPacket& packet) {
 
     HIOOutputBuffer buffer;
 
-    uint  naluLen = packet.GetRefBuffer().GetLength() - 5;  // start code 0x00 00 00 01
+    uint  naluLen = packet.GetRefBuffer().GetLength() - 1;
     HCUSZ naluBuf = static_cast<HCUSZ>(packet.GetRefBuffer().Data());
     const uint8_t* pos = naluBuf + 1;
     uint unit_len = MAX_RTP_LENGTH;
