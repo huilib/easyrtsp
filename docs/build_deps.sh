@@ -21,8 +21,8 @@ pushd ffmpeg4.2.7
 popd 
 
 ## compile huicpp
-unzip v7s0.zip
-pushd v7s0
+unzip huicpp.zip
+pushd huicpp
     ./install.sh
     pushd deps/linux64
         cp -r huicpp ${OUTPUT}/huicpp

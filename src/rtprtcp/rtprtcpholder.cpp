@@ -172,7 +172,7 @@ bool RtpRtcpHolder::IsInvalidChannelId(HUN channelId) const noexcept {
 
 void RtpRtcpHolder::SetClientIp(const HIp4Addr& addr) { 
 
-    HIGNORE_RETURN(m_client_addr.Assign(addr)); 
+    HIGNORE_RETURN(m_client_addr.Setup(addr.GetSockaddr())); 
 
 }
 
